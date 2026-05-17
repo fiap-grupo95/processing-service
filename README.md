@@ -20,43 +20,54 @@ A análise de diagramas de arquitetura por IA envolve operações custosas e de 
 
 ## Arquitetura Proposta
 
-```
-RabbitMQ: process.queue
-    │ consume
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│               Processing Service (worker)                │
-│                                                          │
-│  consumer/process_queue.go                               │
-│      │                                                   │
-│      ▼                                                   │
-│  usecase/process_diagram.go                              │
-│      │                                                   │
-│      ├──▶ repository/job_dynamo.go  (DynamoDB Local)     │
-│      ├──▶ storage/minio.go          (download do arquivo) │
-│      ├──▶ ai/anthropic.go           (Anthropic API)      │
-│      │       └─ guardrail: parse + valida JSON           │
-│      └──▶ queue/rabbitmq.go                              │
-│               ├─ publica em processing.topic (fanout)    │
-│               └─ publica em report.queue (direct)        │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    PQ["RabbitMQ: process.queue"]
+
+    subgraph PS["Processing Service (worker)"]
+        CON["consumer/process_queue.go"]
+        UC["usecase/process_diagram.go"]
+        DY["repository/job_dynamo.go\n(DynamoDB Local)"]
+        MN["storage/minio.go\n(download)"]
+        AI["ai/anthropic.go\n(Anthropic API)\nguardrail: parse + valida JSON"]
+        Q["queue/rabbitmq.go"]
+        CON --> UC
+        UC --> DY
+        UC --> MN
+        UC --> AI
+        UC --> Q
+    end
+
+    PT["processing.topic (fanout)"]
+    RQ["report.queue (direct)"]
+
+    PQ -->|consume| CON
+    Q --> PT
+    Q --> RQ
 ```
 
 ### Guardrail de IA
 
 A resposta do modelo é validada antes de qualquer persistência:
 
-```
-Resposta LLM (texto)
-  │
-  ├─ strip de markdown fences (```json ... ```)
-  ├─ json.Unmarshal
-  ├─ components não vazio?
-  ├─ risks não vazio?
-  └─ recommendations não vazio?
-       │
-       ├─ OK → persiste no DynamoDB + publica em report.queue
-       └─ ERRO → UpdateError no DynamoDB + publica processing_error
+```mermaid
+flowchart TD
+    R["Resposta LLM (texto)"]
+    SM["Strip de markdown fences"]
+    JU["json.Unmarshal"]
+    C{"components\nnão vazio?"}
+    RK{"risks\nnão vazio?"}
+    RC{"recommendations\nnão vazio?"}
+    OK["Persiste no DynamoDB\n+ publica em report.queue"]
+    ERR["UpdateError no DynamoDB\n+ publica processing_error"]
+
+    R --> SM --> JU --> C
+    C -->|sim| RK
+    C -->|não| ERR
+    RK -->|sim| RC
+    RK -->|não| ERR
+    RC -->|sim| OK
+    RC -->|não| ERR
 ```
 
 ### Camadas internas (Clean Architecture)
@@ -96,25 +107,25 @@ internal/
 
 ## Fluxo da Solução
 
-```
-Mensagem recebida de process.queue:
-  {process_id, s3_key, content_type}
-  │
-  ├─ 1. DynamoDB.Save({status: PROCESSING, started_at})
-  ├─ 2. Publica processing.topic: {event: processing_started}
-  │       └─ upload-orchestrator atualiza PostgreSQL → EM_PROCESSAMENTO
-  ├─ 3. MinIO.GetObject(s3_key)          ← download da imagem
-  ├─ 4. Anthropic.Messages.New(...)      ← chamada de visão
-  │       └─ base64(imagem) + prompt de análise de segurança
-  ├─ 5. parseAndValidate(response)       ← guardrail
-  ├─ 6. DynamoDB.UpdateCompleted({analysis, llm_response, completed_at})
-  ├─ 7. Publica report.queue: {process_id, analysis, raw_response}
-  └─ 8. Ack()
+```mermaid
+flowchart TD
+    MSG["Mensagem: process.queue\n{process_id, s3_key, content_type}"]
+    D1["DynamoDB.Save\nstatus = PROCESSING"]
+    D2["Publica processing.topic\n{event: processing_started}\n→ upload-orchestrator: EM_PROCESSAMENTO"]
+    D3["MinIO.GetObject(s3_key)\nDownload da imagem"]
+    D4["Anthropic.Messages.New\nbase64 + prompt de análise de segurança"]
+    GR["parseAndValidate\nGuardrail JSON"]
+    OK{válido?}
+    D5["DynamoDB.UpdateCompleted\nanalysis + llm_response + completed_at"]
+    D6["Publica report.queue\n{process_id, analysis, raw_response}"]
+    ACK["Ack()"]
+    ERR1["DynamoDB.UpdateError\nerror_msg + completed_at"]
+    ERR2["Publica processing.topic\n{event: processing_error}"]
+    NACK["Nack(false, false)\nsem requeue"]
 
-Em qualquer erro:
-  ├─ DynamoDB.UpdateError({error_msg, completed_at})
-  ├─ Publica processing.topic: {event: processing_error, error}
-  └─ Nack(false, false)  ← sem requeue (o estado de ERRO já foi persistido)
+    MSG --> D1 --> D2 --> D3 --> D4 --> GR --> OK
+    OK -->|sim| D5 --> D6 --> ACK
+    OK -->|não| ERR1 --> ERR2 --> NACK
 ```
 
 ---
