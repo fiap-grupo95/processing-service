@@ -1,0 +1,29 @@
+internal/config/config.go
+  s_d24e8879df8bd3::t_24958955afef47 49
+  s_d24e8879df8bd3::t_bf7a5d87b833ab 23
+internal/ai/anthropic.go
+  s_d24e8879df8bd3::t_b23b63fca27d78 36-41
+main.go
+  s_d24e8879df8bd3::t_b954c3c3fd4e2a 77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "9fad646507f0c6a8e1ed5a9ebb0546054925eff9",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_d24e8879df8bd3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "39809e2a-9e5d-4539-a0d8-9524f2e2a432",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
