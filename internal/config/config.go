@@ -20,6 +20,7 @@ type Config struct {
 	ReportQueue      string
 	ProcessingTopic  string
 	LLMAPIKey        string
+	LLMBaseURL       string
 	LLMModel         string
 	LLMMaxTokens     int64
 }
@@ -45,6 +46,7 @@ func Load() (*Config, error) {
 		ReportQueue:      getEnv("REPORT_QUEUE", "report.queue"),
 		ProcessingTopic:  getEnv("PROCESSING_TOPIC", "processing.topic"),
 		LLMAPIKey:        requireEnv("LLM_API_KEY"),
+		LLMBaseURL:       getEnv("LLM_BASE_URL", ""),
 		LLMModel:         getEnv("LLM_MODEL", "claude-sonnet-4-6"),
 		LLMMaxTokens:     maxTokens,
 	}, nil

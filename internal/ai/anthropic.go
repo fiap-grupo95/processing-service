@@ -33,8 +33,12 @@ type AnthropicClient struct {
 	maxTokens int64
 }
 
-func NewAnthropicClient(apiKey, model string, maxTokens int64) *AnthropicClient {
-	client := anthropic.NewClient(option.WithAPIKey(apiKey))
+func NewAnthropicClient(apiKey, baseURL, model string, maxTokens int64) *AnthropicClient {
+	opts := []option.RequestOption{option.WithAPIKey(apiKey)}
+	if baseURL != "" {
+		opts = append(opts, option.WithBaseURL(baseURL))
+	}
+	client := anthropic.NewClient(opts...)
 	return &AnthropicClient{client: client, model: model, maxTokens: maxTokens}
 }
 

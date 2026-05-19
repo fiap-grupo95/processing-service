@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// ─── Anthropic LLM ────────────────────────────────────────────────────────
-	llmClient := ai.NewAnthropicClient(cfg.LLMAPIKey, cfg.LLMModel, cfg.LLMMaxTokens)
+	llmClient := ai.NewAnthropicClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel, cfg.LLMMaxTokens)
 
 	// ─── RabbitMQ ─────────────────────────────────────────────────────────────
 	rmq, err := queue.NewRabbitMQ(cfg.RabbitMQURL)
