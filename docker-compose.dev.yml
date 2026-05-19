@@ -1,0 +1,84 @@
+name: processing-service-dev
+
+# Sobe o serviço com toda a infra necessária.
+# Subir:
+#   docker compose -f docker-compose.dev.yml up --build
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -o /dev/null -w '%{http_code}' http://localhost:8000/ | grep -qE '^(200|400)$'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    ports:
+      - "9020:9000"
+      - "9021:9001"
+    volumes:
+      - proc_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - proc_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  processing-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      DYNAMODB_REGION: ${DYNAMODB_REGION:-us-east-1}
+      DYNAMODB_TABLE: ${DYNAMODB_TABLE:-processing_jobs}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-fakekey}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-fakesecret}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-diagrams}
+      MINIO_USE_SSL: "false"
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      PROCESS_QUEUE: ${PROCESS_QUEUE:-process.queue}
+      REPORT_QUEUE: ${REPORT_QUEUE:-report.queue}
+      PROCESSING_TOPIC: ${PROCESSING_TOPIC:-processing.topic}
+      LLM_API_KEY: ${LLM_API_KEY:?LLM_API_KEY is required}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-4-6}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-4096}
+    depends_on:
+      dynamodb-local:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  proc_minio_data:
+  proc_rabbitmq_data:
