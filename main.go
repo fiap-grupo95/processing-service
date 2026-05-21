@@ -73,8 +73,14 @@ func main() {
 		log.Fatal("minio init failed", zap.Error(err))
 	}
 
-	// ─── Anthropic LLM ────────────────────────────────────────────────────────
-	llmClient := ai.NewAnthropicClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel, cfg.LLMMaxTokens)
+	// ─── LLM Client ───────────────────────────────────────────────────────────
+	var llmClient usecase.LLMClient
+	switch cfg.LLMProvider {
+	case "openai":
+		llmClient = ai.NewOpenAIClient(cfg.LLMAPIKey, cfg.LLMModel, cfg.LLMMaxTokens)
+	default:
+		llmClient = ai.NewAnthropicClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel, cfg.LLMMaxTokens)
+	}
 
 	// ─── RabbitMQ ─────────────────────────────────────────────────────────────
 	rmq, err := queue.NewRabbitMQ(cfg.RabbitMQURL)

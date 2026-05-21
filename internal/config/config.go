@@ -19,6 +19,7 @@ type Config struct {
 	ProcessQueue     string
 	ReportQueue      string
 	ProcessingTopic  string
+	LLMProvider      string
 	LLMAPIKey        string
 	LLMBaseURL       string
 	LLMModel         string
@@ -45,6 +46,7 @@ func Load() (*Config, error) {
 		ProcessQueue:     getEnv("PROCESS_QUEUE", "process.queue"),
 		ReportQueue:      getEnv("REPORT_QUEUE", "report.queue"),
 		ProcessingTopic:  getEnv("PROCESSING_TOPIC", "processing.topic"),
+		LLMProvider:      getEnv("LLM_PROVIDER", "anthropic"),
 		LLMAPIKey:        requireEnv("LLM_API_KEY"),
 		LLMBaseURL:       getEnv("LLM_BASE_URL", ""),
 		LLMModel:         getEnv("LLM_MODEL", "claude-sonnet-4-6"),
