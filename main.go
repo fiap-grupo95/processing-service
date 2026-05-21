@@ -78,6 +78,8 @@ func main() {
 	switch cfg.LLMProvider {
 	case "openai":
 		llmClient = ai.NewOpenAIClient(cfg.LLMAPIKey, cfg.LLMModel, cfg.LLMMaxTokens)
+	case "gemini":
+		llmClient = ai.NewGeminiClient(cfg.LLMAPIKey, cfg.LLMModel, cfg.LLMMaxTokens)
 	default:
 		llmClient = ai.NewAnthropicClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel, cfg.LLMMaxTokens)
 	}
