@@ -1,0 +1,32 @@
+main.go
+  s_cd6d8abf102bbb::t_d8dd9b891a537e 81-82
+go.mod
+  s_cd6d8abf102bbb::t_1b563564fb6706 19-24,37,39-40,42-45,47-48,58-63,67-68,71-73
+internal/ai/gemini.go
+  s_cd6d8abf102bbb::t_ad5bd8fc0a8c70 1-98
+.env.example
+  s_cd6d8abf102bbb::t_db7a96c0ad53e3 26,28
+go.sum
+  ai_agent 1-14,47-49,55-60,63-67,70-93,96-98,101-104,124,130-134,147-158,165-166,169-178,181-192,196-197,200-216,219-223,226-234,240,243-244
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "46d53a74176d497a7cafab0860ad7eee02b06e46",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_cd6d8abf102bbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "77d29a9a-1534-425d-8153-0ce7fd0f626e",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
