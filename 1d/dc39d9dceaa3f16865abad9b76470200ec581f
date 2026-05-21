@@ -1,0 +1,34 @@
+go.sum
+  ai_agent 61-62,90-91,94-95,99-100,103-104
+go.mod
+  s_cd6d8abf102bbb::t_cb9a72b962e02c 37,44-47
+main.go
+  s_cd6d8abf102bbb::t_0b3421fac5dff1 76-83
+internal/config/config.go
+  s_cd6d8abf102bbb::t_768f75dfb79db4 49
+  s_cd6d8abf102bbb::t_2b486d61c952af 22
+internal/ai/openai.go
+  s_cd6d8abf102bbb::t_1123760d21d7bc 1-17,19-82
+  s_cd6d8abf102bbb::t_47cea12092ccfa 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "1ddc39d9dceaa3f16865abad9b76470200ec581f",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_cd6d8abf102bbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "77d29a9a-1534-425d-8153-0ce7fd0f626e",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
