@@ -1,0 +1,24 @@
+.env.example
+  s_cd6d8abf102bbb::t_550e91b2153186 25-26,28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "984415ff7e179310cf481eaafc21fbe72c6f7325",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_cd6d8abf102bbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "77d29a9a-1534-425d-8153-0ce7fd0f626e",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
