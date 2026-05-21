@@ -1,0 +1,12 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "9de2a67441851e69cd458aaedd757ddf72a7d080",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
