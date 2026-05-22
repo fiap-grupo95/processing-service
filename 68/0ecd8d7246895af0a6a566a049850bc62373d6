@@ -1,0 +1,28 @@
+internal/usecase/process_diagram_test.go
+  s_2ef2b6e774e046::t_b404d0c52ba167 4
+  s_2ef2b6e774e046::t_afe4baaa157ab2 366
+internal/consumer/process_queue_test.go
+  s_2ef2b6e774e046::t_43d717f8a3c2ca 207
+  s_2ef2b6e774e046::t_28023bdafc17fa 230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "680ecd8d7246895af0a6a566a049850bc62373d6",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_2ef2b6e774e046": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c440589c-2b78-437a-a650-b8ff495cb0ab",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
