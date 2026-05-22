@@ -9,7 +9,6 @@ import (
 	"github.com/fiap/secure-systems/processing-service/internal/usecase"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.uber.org/zap"
 )
 
 // ──────────────────────────────────────────────
@@ -53,7 +52,7 @@ func (m *mockAcknowledger) Reject(_ uint64, _ bool) error {
 
 func newTestConsumer(proc diagramProcessor) *ProcessQueueConsumer {
 	nrApp, _ := newrelic.NewApplication(newrelic.ConfigEnabled(false))
-	return NewProcessQueueConsumer(proc, nrApp, zap.NewNop())
+	return NewProcessQueueConsumer(proc, nrApp)
 }
 
 func newDelivery(ack *mockAcknowledger, body []byte) amqp.Delivery {

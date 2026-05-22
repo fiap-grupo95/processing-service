@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/fiap/secure-systems/processing-service/internal/domain"
-	"go.uber.org/zap"
 )
 
 // ──────────────────────────────────────────────
@@ -91,7 +90,7 @@ func (m *mockEventPublisher) PublishToExchange(ctx context.Context, exchange str
 // ──────────────────────────────────────────────
 
 func newUseCase(repo JobRepository, dl DiagramDownloader, llm LLMClient, pub EventPublisher) *ProcessDiagramUseCase {
-	return NewProcessDiagramUseCase(repo, dl, llm, pub, "processing.topic", "report.queue", zap.NewNop())
+	return NewProcessDiagramUseCase(repo, dl, llm, pub, "processing.topic", "report.queue")
 }
 
 func defaultInput() ProcessDiagramInput {
@@ -373,9 +372,8 @@ func TestNewProcessDiagramUseCase_SetsFields(t *testing.T) {
 	dl := &mockDiagramDownloader{}
 	llm := &mockLLMClient{}
 	pub := &mockEventPublisher{}
-	log := zap.NewNop()
 
-	uc := NewProcessDiagramUseCase(repo, dl, llm, pub, "my.topic", "my.queue", log)
+	uc := NewProcessDiagramUseCase(repo, dl, llm, pub, "my.topic", "my.queue")
 
 	if uc.processingTopic != "my.topic" {
 		t.Errorf("expected my.topic, got %s", uc.processingTopic)

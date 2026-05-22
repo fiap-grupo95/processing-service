@@ -13,29 +13,33 @@ import (
 	"github.com/fiap/secure-systems/processing-service/internal/ai"
 	"github.com/fiap/secure-systems/processing-service/internal/config"
 	"github.com/fiap/secure-systems/processing-service/internal/consumer"
+	"github.com/fiap/secure-systems/processing-service/internal/logging"
 	"github.com/fiap/secure-systems/processing-service/internal/queue"
 	"github.com/fiap/secure-systems/processing-service/internal/repository"
 	"github.com/fiap/secure-systems/processing-service/internal/storage"
 	"github.com/fiap/secure-systems/processing-service/internal/usecase"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"go.uber.org/zap"
 )
 
 func main() {
-	log, _ := zap.NewProduction()
-	defer log.Sync()
-
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("config load failed", zap.Error(err))
+		panic("config load failed: " + err.Error())
 	}
 
 	// ─── New Relic ────────────────────────────────────────────────────────────
-	nrApp, err := newrelic.NewApplication(newrelic.ConfigFromEnvironment())
+	nrApp, err := newrelic.NewApplication(
+		newrelic.ConfigFromEnvironment(),
+		newrelic.ConfigDistributedTracerEnabled(true),
+		newrelic.ConfigAppLogForwardingEnabled(true),
+	)
 	if err != nil {
-		log.Warn("new relic not configured", zap.Error(err))
 		nrApp, _ = newrelic.NewApplication(newrelic.ConfigEnabled(false))
 	}
+
+	// ─── Logging (deve ser inicializado após o New Relic) ─────────────────────
+	logging.Init(nrApp)
+	log := logging.Logger()
 
 	// ─── DynamoDB ─────────────────────────────────────────────────────────────
 	awsAccessKey := envOrDefault("AWS_ACCESS_KEY_ID", "fakekey")
@@ -48,7 +52,7 @@ func main() {
 		),
 	)
 	if err != nil {
-		log.Fatal("aws config failed", zap.Error(err))
+		log.Fatal().Err(err).Msg("aws config failed")
 	}
 
 	dynamoOpts := []func(*dynamodb.Options){}
@@ -62,7 +66,7 @@ func main() {
 
 	jobRepo := repository.NewJobRepository(dynamoClient, cfg.DynamoDBTable)
 	if err := jobRepo.EnsureTable(context.Background()); err != nil {
-		log.Fatal("dynamodb table setup failed", zap.Error(err))
+		log.Fatal().Err(err).Msg("dynamodb table setup failed")
 	}
 
 	// ─── MinIO ────────────────────────────────────────────────────────────────
@@ -70,7 +74,7 @@ func main() {
 		cfg.MinioEndpoint, cfg.MinioAccessKey, cfg.MinioSecretKey, cfg.MinioBucket, cfg.MinioUseSSL,
 	)
 	if err != nil {
-		log.Fatal("minio init failed", zap.Error(err))
+		log.Fatal().Err(err).Msg("minio init failed")
 	}
 
 	// ─── LLM Client ───────────────────────────────────────────────────────────
@@ -87,37 +91,37 @@ func main() {
 	// ─── RabbitMQ ─────────────────────────────────────────────────────────────
 	rmq, err := queue.NewRabbitMQ(cfg.RabbitMQURL)
 	if err != nil {
-		log.Fatal("rabbitmq connect failed", zap.Error(err))
+		log.Fatal().Err(err).Msg("rabbitmq connect failed")
 	}
 	defer rmq.Close()
 
 	for _, q := range []string{cfg.ProcessQueue, cfg.ReportQueue} {
 		if err := rmq.DeclareQueue(q); err != nil {
-			log.Fatal("declare queue failed", zap.String("queue", q), zap.Error(err))
+			log.Fatal().Err(err).Str("queue", q).Msg("declare queue failed")
 		}
 	}
 	if err := rmq.DeclareExchange(cfg.ProcessingTopic); err != nil {
-		log.Fatal("declare processing exchange failed", zap.Error(err))
+		log.Fatal().Err(err).Msg("declare processing exchange failed")
 	}
 
 	deliveries, err := rmq.Consume(cfg.ProcessQueue)
 	if err != nil {
-		log.Fatal("consume process queue failed", zap.Error(err))
+		log.Fatal().Err(err).Msg("consume process queue failed")
 	}
 
 	// ─── Caso de Uso ──────────────────────────────────────────────────────────
 	processUC := usecase.NewProcessDiagramUseCase(
 		jobRepo, minioDownloader, llmClient, rmq,
-		cfg.ProcessingTopic, cfg.ReportQueue, log,
+		cfg.ProcessingTopic, cfg.ReportQueue,
 	)
 
 	// ─── Consumer (bloqueia até SIGINT/SIGTERM) ───────────────────────────────
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	log.Info("processing-service started")
-	consumer.NewProcessQueueConsumer(processUC, nrApp, log).Run(ctx, deliveries)
-	log.Info("processing-service stopped")
+	log.Info().Msg("processing-service started")
+	consumer.NewProcessQueueConsumer(processUC, nrApp).Run(ctx, deliveries)
+	log.Info().Msg("processing-service stopped")
 }
 
 func envOrDefault(key, def string) string {

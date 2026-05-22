@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.41
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.37.0
 	github.com/minio/minio-go/v7 v7.0.77
-	github.com/newrelic/go-agent/v3 v3.35.0
+	github.com/newrelic/go-agent/v3 v3.40.1
 	github.com/openai/openai-go v1.12.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	go.uber.org/zap v1.27.0
@@ -49,8 +49,13 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/newrelic/go-agent/v3/integrations/logcontext-v2/nrwriter v1.0.0 // indirect
+	github.com/newrelic/go-agent/v3/integrations/logcontext-v2/zerologWriter v1.0.5 // indirect
 	github.com/rs/xid v1.6.0 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

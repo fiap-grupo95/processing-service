@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/fiap/secure-systems/processing-service/internal/logging"
 	"github.com/fiap/secure-systems/processing-service/internal/usecase"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.uber.org/zap"
 )
 
 type processMessage struct {
@@ -24,27 +24,25 @@ type diagramProcessor interface {
 type ProcessQueueConsumer struct {
 	uc    diagramProcessor
 	nrApp *newrelic.Application
-	log   *zap.Logger
 }
 
 func NewProcessQueueConsumer(
 	uc diagramProcessor,
 	nrApp *newrelic.Application,
-	log *zap.Logger,
 ) *ProcessQueueConsumer {
-	return &ProcessQueueConsumer{uc: uc, nrApp: nrApp, log: log}
+	return &ProcessQueueConsumer{uc: uc, nrApp: nrApp}
 }
 
 func (c *ProcessQueueConsumer) Run(ctx context.Context, deliveries <-chan amqp.Delivery) {
-	c.log.Info("process queue consumer started")
+	logging.Logger().Info().Msg("process queue consumer started")
 	for {
 		select {
 		case <-ctx.Done():
-			c.log.Info("process queue consumer stopped")
+			logging.Logger().Info().Msg("process queue consumer stopped")
 			return
 		case d, ok := <-deliveries:
 			if !ok {
-				c.log.Warn("process queue channel closed")
+				logging.Logger().Warn().Msg("process queue channel closed")
 				return
 			}
 			c.handle(d)
@@ -58,33 +56,31 @@ func (c *ProcessQueueConsumer) handle(d amqp.Delivery) {
 
 	var msg processMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
-		c.log.Error("invalid process queue message", zap.Error(err))
+		logging.Logger().Error().Err(err).Msg("invalid process queue message")
 		txn.NoticeError(err)
-		d.Nack(false, false) // descarta — payload inválido não vai melhorar com requeue
+		d.Nack(false, false)
 		return
 	}
 
 	if msg.ProcessID == "" || msg.S3Key == "" {
-		c.log.Error("process message missing required fields",
-			zap.String("processId", msg.ProcessID),
-			zap.String("s3Key", msg.S3Key),
-		)
+		logging.Logger().Error().
+			Str("process_id", msg.ProcessID).
+			Str("s3_key", msg.S3Key).
+			Msg("process message missing required fields")
 		d.Nack(false, false)
 		return
 	}
 
 	ctx := newrelic.NewContext(context.Background(), txn)
-	txn.AddAttribute("processId", msg.ProcessID)
+	txn.AddAttribute("process_id", msg.ProcessID)
 
 	if err := c.uc.Execute(ctx, usecase.ProcessDiagramInput{
 		ProcessID:   msg.ProcessID,
 		S3Key:       msg.S3Key,
 		ContentType: msg.ContentType,
 	}); err != nil {
-		c.log.Error("process diagram failed",
-			zap.String("processId", msg.ProcessID),
-			zap.Error(err),
-		)
+		logging.LoggerWithContext(ctx).Error().
+			Str("process_id", msg.ProcessID).Err(err).Msg("process diagram failed")
 		txn.NoticeError(err)
 		// Nack sem requeue: o use case já atualizou o status para ERRO e notificou o orquestrador
 		d.Nack(false, false)

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/fiap/secure-systems/processing-service/internal/domain"
-	"go.uber.org/zap"
+	"github.com/fiap/secure-systems/processing-service/internal/logging"
 )
 
 type ProcessDiagramInput struct {
@@ -35,7 +35,6 @@ type ProcessDiagramUseCase struct {
 	publisher       EventPublisher
 	processingTopic string
 	reportQueue     string
-	log             *zap.Logger
 }
 
 func NewProcessDiagramUseCase(
@@ -44,7 +43,6 @@ func NewProcessDiagramUseCase(
 	llm LLMClient,
 	publisher EventPublisher,
 	processingTopic, reportQueue string,
-	log *zap.Logger,
 ) *ProcessDiagramUseCase {
 	return &ProcessDiagramUseCase{
 		repo:            repo,
@@ -53,12 +51,11 @@ func NewProcessDiagramUseCase(
 		publisher:       publisher,
 		processingTopic: processingTopic,
 		reportQueue:     reportQueue,
-		log:             log,
 	}
 }
 
 func (uc *ProcessDiagramUseCase) Execute(ctx context.Context, in ProcessDiagramInput) error {
-	log := uc.log.With(zap.String("processId", in.ProcessID))
+	log := logging.LoggerWithContext(ctx).With().Str("process_id", in.ProcessID).Logger()
 
 	// 1. Persiste o job com status PROCESSING
 	job := &domain.ProcessingJob{
@@ -72,10 +69,11 @@ func (uc *ProcessDiagramUseCase) Execute(ctx context.Context, in ProcessDiagramI
 
 	// 2. Notifica orquestrador: processamento iniciado
 	if err := uc.publishProcessingEvent(ctx, in.ProcessID, "processing_started", ""); err != nil {
-		log.Warn("failed to publish processing_started", zap.Error(err))
+		log.Warn().Err(err).Msg("failed to publish processing_started")
 	}
 
 	// 3. Download do diagrama do MinIO
+	defer logging.StartSegment(ctx, "ProcessDiagram.StorageDownload")()
 	imageData, contentType, err := uc.downloader.Download(ctx, in.S3Key)
 	if err != nil {
 		return uc.failJob(ctx, in.ProcessID, fmt.Sprintf("download diagram: %v", err))
@@ -83,16 +81,17 @@ func (uc *ProcessDiagramUseCase) Execute(ctx context.Context, in ProcessDiagramI
 	if contentType == "" {
 		contentType = in.ContentType
 	}
+	log.Info().Int("bytes", len(imageData)).Msg("diagram downloaded")
 
-	log.Info("diagram downloaded", zap.Int("bytes", len(imageData)))
-
-	// 4. Análise pela IA (com guardrail de validação interno ao LLMClient)
+	// 4. Análise pela IA
+	defer logging.StartSegment(ctx, "ProcessDiagram.LLMAnalysis")()
 	analysis, rawResponse, err := uc.llm.Analyze(ctx, imageData, contentType)
 	if err != nil {
 		return uc.failJob(ctx, in.ProcessID, fmt.Sprintf("llm analysis: %v", err))
 	}
 
 	// 5. Persiste resultado completo no DynamoDB
+	defer logging.StartSegment(ctx, "ProcessDiagram.DynamoSave")()
 	if err := uc.repo.UpdateCompleted(ctx, in.ProcessID, rawResponse, analysis); err != nil {
 		return uc.failJob(ctx, in.ProcessID, fmt.Sprintf("update completed: %v", err))
 	}
@@ -107,18 +106,19 @@ func (uc *ProcessDiagramUseCase) Execute(ctx context.Context, in ProcessDiagramI
 		return uc.failJob(ctx, in.ProcessID, fmt.Sprintf("publish to report queue: %v", err))
 	}
 
-	log.Info("diagram processed successfully")
+	log.Info().Msg("diagram processed successfully")
 	return nil
 }
 
 func (uc *ProcessDiagramUseCase) failJob(ctx context.Context, processID, errMsg string) error {
-	uc.log.Error("processing failed", zap.String("processId", processID), zap.String("reason", errMsg))
+	logging.LoggerWithContext(ctx).Error().
+		Str("process_id", processID).Str("reason", errMsg).Msg("processing failed")
 
 	if err := uc.repo.UpdateError(ctx, processID, errMsg); err != nil {
-		uc.log.Error("failed to persist error state", zap.Error(err))
+		logging.LoggerWithContext(ctx).Error().Err(err).Msg("failed to persist error state")
 	}
 	if err := uc.publishProcessingEvent(ctx, processID, "processing_error", errMsg); err != nil {
-		uc.log.Error("failed to publish processing_error", zap.Error(err))
+		logging.LoggerWithContext(ctx).Error().Err(err).Msg("failed to publish processing_error")
 	}
 
 	return fmt.Errorf("%s", errMsg)
