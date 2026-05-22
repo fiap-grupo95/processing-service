@@ -56,7 +56,10 @@ func (c *ProcessQueueConsumer) handle(d amqp.Delivery) {
 
 	var msg processMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
-		logging.Logger().Error().Err(err).Msg("invalid process queue message")
+		logging.Logger().Error().
+			Err(err).
+			Int("body_size", len(d.Body)).
+			Msg("invalid process queue message")
 		txn.NoticeError(err)
 		d.Nack(false, false)
 		return
@@ -66,6 +69,7 @@ func (c *ProcessQueueConsumer) handle(d amqp.Delivery) {
 		logging.Logger().Error().
 			Str("process_id", msg.ProcessID).
 			Str("s3_key", msg.S3Key).
+			Str("content_type", msg.ContentType).
 			Msg("process message missing required fields")
 		d.Nack(false, false)
 		return
@@ -73,19 +77,26 @@ func (c *ProcessQueueConsumer) handle(d amqp.Delivery) {
 
 	ctx := newrelic.NewContext(context.Background(), txn)
 	txn.AddAttribute("process_id", msg.ProcessID)
+	txn.AddAttribute("s3_key", msg.S3Key)
+
+	log := logging.LoggerWithContext(ctx).With().
+		Str("process_id", msg.ProcessID).
+		Str("s3_key", msg.S3Key).
+		Str("content_type", msg.ContentType).
+		Logger()
 
 	if err := c.uc.Execute(ctx, usecase.ProcessDiagramInput{
 		ProcessID:   msg.ProcessID,
 		S3Key:       msg.S3Key,
 		ContentType: msg.ContentType,
 	}); err != nil {
-		logging.LoggerWithContext(ctx).Error().
-			Str("process_id", msg.ProcessID).Err(err).Msg("process diagram failed")
+		log.Error().Err(err).Msg("process diagram failed")
 		txn.NoticeError(err)
 		// Nack sem requeue: o use case já atualizou o status para ERRO e notificou o orquestrador
 		d.Nack(false, false)
 		return
 	}
 
+	log.Info().Msg("diagram processed successfully")
 	d.Ack(false)
 }
