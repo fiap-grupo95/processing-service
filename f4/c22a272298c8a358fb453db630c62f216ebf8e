@@ -1,0 +1,37 @@
+internal/consumer/process_queue.go
+  s_017d8af4510f35::t_3ed29c5a50382e 7,33,37,41,45,59,61,66-69,75,82-83
+internal/usecase/process_diagram_test.go
+  s_017d8af4510f35::t_d52e13e848581c 93
+  s_017d8af4510f35::t_d07885b8793ba9 376
+internal/logging/logger.go
+  s_017d8af4510f35::t_9c5fc30d2f8591 1-44
+main.go
+  s_017d8af4510f35::t_02d6068f3fe30d 16,27,31-35,40-43,55,69,77,94,100,104,109,115,122-124
+internal/usecase/process_diagram.go
+  s_017d8af4510f35::t_ed927a2a923917 10,58,72,76,84,86-87,94,109,114-115,118,121
+internal/consumer/process_queue_test.go
+  s_017d8af4510f35::t_d9d74af221d6c3 55
+go.mod
+  s_017d8af4510f35::t_0012f6c9cd0097 12,52-53,55-56,58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "f4c22a272298c8a358fb453db630c62f216ebf8e",
+  "prompts": {},
+  "humans": {
+    "h_08c840ee615c43": {
+      "author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_017d8af4510f35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d66c0fd1-4d70-4b5e-a7af-72838c054fc3",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "programanda03 <paganiamanda791@gmail.com>"
+    }
+  }
+}
