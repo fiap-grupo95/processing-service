@@ -16,14 +16,19 @@ type processMessage struct {
 	ContentType string `json:"content_type"`
 }
 
+// diagramProcessor abstrai o caso de uso para permitir testes com mocks.
+type diagramProcessor interface {
+	Execute(ctx context.Context, in usecase.ProcessDiagramInput) error
+}
+
 type ProcessQueueConsumer struct {
-	uc    *usecase.ProcessDiagramUseCase
+	uc    diagramProcessor
 	nrApp *newrelic.Application
 	log   *zap.Logger
 }
 
 func NewProcessQueueConsumer(
-	uc *usecase.ProcessDiagramUseCase,
+	uc diagramProcessor,
 	nrApp *newrelic.Application,
 	log *zap.Logger,
 ) *ProcessQueueConsumer {
