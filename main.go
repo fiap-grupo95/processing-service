@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -35,6 +36,8 @@ func main() {
 	)
 	if err != nil {
 		nrApp, _ = newrelic.NewApplication(newrelic.ConfigEnabled(false))
+	} else {
+		_ = nrApp.WaitForConnection(5 * time.Second)
 	}
 
 	// ─── Logging (deve ser inicializado após o New Relic) ─────────────────────
