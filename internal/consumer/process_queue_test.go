@@ -204,7 +204,7 @@ func TestRun_StopsOnContextCancel(t *testing.T) {
 	select {
 	case <-done:
 		// ok: consumer parou após cancelamento do contexto
-	case <-make(chan struct{}):
+	case <-time.After(2 * time.Second):
 		t.Error("consumer did not stop after context cancellation")
 	}
 }
@@ -227,7 +227,7 @@ func TestRun_StopsWhenChannelClosed(t *testing.T) {
 	select {
 	case <-done:
 		// ok: consumer parou após fechamento do canal
-	case <-make(chan struct{}):
+	case <-time.After(2 * time.Second):
 		t.Error("consumer did not stop after channel was closed")
 	}
 }

@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -362,7 +363,7 @@ func TestExecute_ReportQueuePayloadContainsProcessID(t *testing.T) {
 	if publishedPayload == nil {
 		t.Fatal("expected payload to be published to report queue")
 	}
-	if !contains(publishedPayload, "proc-123") {
+	if !bytes.Contains(publishedPayload, []byte("proc-123")) {
 		t.Errorf("expected published payload to contain process ID, got: %s", publishedPayload)
 	}
 }
@@ -427,15 +428,3 @@ func TestExecute_FailJob_PublishErrorEventAlsoFails(t *testing.T) {
 	}
 }
 
-// contains verifica se payload contém substring.
-func contains(payload []byte, s string) bool {
-	return len(payload) > 0 && string(payload) != "" &&
-		func() bool {
-			for i := 0; i <= len(payload)-len(s); i++ {
-				if string(payload[i:i+len(s)]) == s {
-					return true
-				}
-			}
-			return false
-		}()
-}
